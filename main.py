@@ -14,6 +14,7 @@ def main() -> None:
 
     widget.title('Игра Баше')
     widget.geometry(f'{config.widget_width}x{config.widget_height}')
+    widget.resizable(width=False, height=False)
 
     n = tk.IntVar(value=15)
     m = tk.IntVar(value=3)
