@@ -197,6 +197,7 @@ class Game(BaseGame):
             self.move_selected(*self.selected_initial_pos)
         self.selected = -1
 
+    @_update_vars
     def remove_selected(self) -> None:
         if self.nothing_selected():
             return
