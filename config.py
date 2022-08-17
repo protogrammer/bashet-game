@@ -13,7 +13,7 @@ game_config_row_min_size: Final = 120
 scale_length: Final = widget_width
 canvas_width: Final = widget_width - 30
 canvas_height: Final = 2 * canvas_width // 5
-outline_color: Final = 'darkblue'
+outline_color: Final = 'lightblue'
 canvas_background_color: Final = 'black'
 
 max_n: Final = 100
