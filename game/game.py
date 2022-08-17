@@ -1,161 +1,272 @@
 import tkinter as tk
 import random
-import time
 from collections.abc import Callable
+from typing import Any, Union, Literal, Final, Optional
 
 import config
-from .visualization import Game
-from utils import grid_buttons, configure_row_minsize
+from .star import Star
+from .spaceship import Spaceship
+from .types import BaseStar, BaseGame, BaseSpaceship
 
 
-def computer_response(left: int, m: int) -> int:
-    rest = left % (m + 1)
-    if rest == 0:
-        return random.randint(1, m)
-    return rest
+def _update_vars(f: Callable[[BaseGame, ...], Any]) -> Any:
+    def inner(self: BaseGame, *args, **kwargs) -> Any:
+        try:
+            return f(self, *args, **kwargs)
+        finally:
+            self.get_taken_var().set(self.taken())
+            self.get_left_var().set(self.stars_left())
+
+    return inner
 
 
-def create(widget: tk.Tk,
-           get_config_frame: Callable[[], tk.Frame],
-           n_var: tk.IntVar,
-           m_var: tk.IntVar,
-           ) -> tuple[tk.Frame, Callable[[], None]]:
-    frame = tk.Frame(widget)
+class Game(BaseGame):
+    def __init__(self,
+                 canvas: tk.Canvas,
+                 n_var: tk.IntVar,
+                 m_var: tk.IntVar,
+                 next_turn_button: tk.Button):
+        self.canvas: Final[tk.Canvas] = canvas
+        self.n_var: Final[tk.IntVar] = n_var
+        self.m_var: Final[tk.IntVar] = m_var
+        self.next_turn_button: Final[tk.Button] = next_turn_button
+        self.me: Final[BaseSpaceship] = Spaceship(
+            self,
+            tk.PhotoImage(file=config.my_spaceship_image),
+            tk.PhotoImage(file=config.my_spaceship_brighter_image),
+            0,
+            0,
+            tk.NW,
+        )
+        self.enemy: Final[BaseSpaceship] = Spaceship(
+            self,
+            tk.PhotoImage(file=config.enemy_spaceship_image),
+            tk.PhotoImage(file=config.enemy_spaceship_brighter_image),
+            config.canvas_width,
+            config.canvas_height,
+            tk.SE,
+        )
+        self.turn: Final[tk.IntVar] = tk.IntVar(value=1)
+        self.stars: list[BaseStar] = []
+        self.selected: int = -1
+        self.selected_initial_pos: tuple[int, int] = (0, 0)
+        self.im_selected: bool = False
+        self.taken_stars: list[BaseStar] = []
+        self.taken_var: Final[tk.IntVar] = tk.IntVar(value=0)
+        self.left_var: Final[tk.IntVar] = tk.IntVar(value=n_var.get())
 
-    n_m_info_labels = [
-        tk.Label(frame, text='N:', font=config.big_font),
-        tk.Label(frame, textvariable=n_var, font=config.big_font),
-        tk.Label(frame, text='M:', font=config.big_font),
-        tk.Label(frame, textvariable=m_var, font=config.big_font),
-    ]
+    @_update_vars
+    def reinit(self) -> None:
+        self.turn.set(1)
+        self.taken_var.set(0)
+        self.left_var.set(self.n_var.get())
+        self.stars = [Star(self) for _ in range(self.n_var.get())]
+        self.selected = -1
+        self.im_selected = False
+        self.taken_stars = []
+        self.canvas.create_rectangle(
+            0,
+            0,
+            config.canvas_width,
+            config.canvas_height,
+            outline=config.canvas_background_color,
+            fill=config.canvas_background_color,
+        )
+        self.me.draw()
+        self.enemy.draw()
+        self.for_all(lambda _, star: star.draw())
 
-    canvas = tk.Canvas(
-        frame,
-        bg=config.canvas_background_color,
-        width=config.canvas_width,
-        height=config.canvas_height,
-    )
-
-    resign_button = tk.Button(frame)
-    try_again_button = tk.Button(frame)
-    next_turn_button = tk.Button(frame)
-
-    game = Game(canvas, n_var, m_var, next_turn_button)
-
-    n_m_info_labels.extend([
-        tk.Label(frame, text='Взято:', font=config.big_font),
-        tk.Label(frame, textvariable=game.get_taken_var(), font=config.big_font),
-        tk.Label(frame, text='Осталось:', font=config.big_font),
-        tk.Label(frame, textvariable=game.get_left_var(), font=config.big_font),
-        tk.Label(frame, text='Ход:', font=config.big_font),
-        tk.Label(frame, textvariable=game.get_turn_var(), font=config.big_font),
-    ])
-
-    enemy_turn: bool = False
-
-    def mouse_down(event: tk.Event) -> None:
-        if enemy_turn:
-            return
-        game.select(event.x, event.y)
-
-    def mouse_up(event: tk.Event) -> None:
-        if enemy_turn:
-            return
-        game.deselect(event.x, event.y)
-
-    def mouse_move(event: tk.Event) -> None:
-        if enemy_turn:
-            return
-        game.move_selected(event.x, event.y)
-
-    canvas.bind('<Button-1>', mouse_down)
-    canvas.bind('<ButtonRelease-1>', mouse_up)
-    canvas.bind('<B1-Motion>', mouse_move)
-
-    def switch_to_config() -> None:
-        frame.pack_forget()
-        get_config_frame().pack()
-
-    buttons = [
-        resign_button,
-        try_again_button,
-        next_turn_button,
-    ]
-
-    def next_turn() -> None:
-        game.reset_taken()
-        if game.stars_left() == 0:
-            time.sleep(config.game_result_sleep_sec)
-            canvas.create_text(
-                config.canvas_width // 2,
-                config.canvas_height // 2,
-                text='ПОБЕДА',
-                fill=config.victory_text_color,
-                font=config.game_result_font,
-                anchor=tk.CENTER,
-            )
-            resign_button.config(text='Назад')
-            next_turn_button.config(state=tk.DISABLED)
-            return
-
-        nonlocal enemy_turn
-        enemy_turn = True
-        for button in buttons:
-            button.config(state=tk.DISABLED)
-
-        def callback() -> None:
-            game.reset_taken()
-            nonlocal enemy_turn
-            enemy_turn = False
-            for button in buttons[:2]:
-                button.config(state=tk.NORMAL)
-            if game.stars_left() == 0:
-                time.sleep(config.game_result_sleep_sec)
-                canvas.create_text(
-                    config.canvas_width // 2,
-                    config.canvas_height // 2,
-                    text='ПОРАЖЕНИЕ!',
-                    fill=config.defeat_text_color,
-                    font=config.game_result_font,
-                    anchor=tk.CENTER,
-                )
-                resign_button.config(text='Назад')
+    def for_all(self,
+                f: Callable[[int, BaseStar], Union[Literal[True], Any]],
+                ) -> None:
+        for i, star in enumerate(self.stars):
+            if f(i, star) is True:
                 return
-            next_turn_button.config(text='Следующий ход')
-            turn = game.get_turn_var()
-            turn.set(turn.get() + 1)
 
-        response = computer_response(game.stars_left(), m_var.get())
-        game.enemy_turn(response, callback)
+    def my_spaceship(self) -> BaseSpaceship:
+        return self.me
 
-    def init_buttons() -> None:
-        def init() -> None:
-            init_buttons()
-            game.reinit()
-        resign_button.config(text='Сдаться', command=switch_to_config, state=tk.NORMAL)
-        try_again_button.config(text='Заново', command=init, state=tk.NORMAL)
-        next_turn_button.config(text='Передать очередь хода', command=next_turn, state=tk.NORMAL)
+    def enemy_spaceship(self) -> BaseSpaceship:
+        return self.enemy
 
-    init_buttons()
+    def is_mine(self, x: int, y: int) -> bool:
+        return x < self.me.width() and y < self.me.height()
 
-    col_num = max(len(n_m_info_labels), len(buttons))
-    row_num = 0
+    def get_canvas(self) -> tk.Canvas:
+        return self.canvas
 
-    for i, label in enumerate(n_m_info_labels):
-        label.grid(row=row_num, column=i)
-    row_num += 1
+    def _activate_me(self):
+        self.im_selected = True
+        self.me.set_brightness_status('bright')
+        self.me.draw()
 
-    canvas.grid(row=row_num, column=0, columnspan=col_num)
-    row_num += 1
+    def _deactivate_me(self):
+        self.im_selected = False
+        self.me.set_brightness_status('normal')
+        self.me.draw()
 
-    grid_buttons(buttons[:2], row_num, 3)
-    next_turn_button.grid(row=row_num, column=2*3, columnspan=4)
-    row_num += 1
+    @_update_vars
+    def select(self, x: int, y: int) -> None:
+        def do(i: int, star: BaseStar) -> None:
+            if star.contains(x, y):
+                self.selected = i
+                self.selected_initial_pos = star.coordinates()
+        self.selected = -1
+        self.for_all(do)
+        if self.nothing_selected():
+            if self.taken_stars and self.is_mine(x, y):
+                self._activate_me()
+        else:
+            self.stars[self.selected].draw()
 
-    configure_row_minsize(frame, row_num, config.game_row_min_size)
+    def _erase_selected(self) -> None:
+        if self.nothing_selected():
+            return
+        selected_star = self.stars[self.selected]
 
-    def reinit() -> None:
-        init_buttons()
-        game.reinit()
+        bg = config.canvas_background_color
+        selected_star.draw(bg, bg)
 
-    return frame, reinit
+        def do(i: int, star: BaseStar) -> None:
+            if i != self.selected and selected_star.touches(star):
+                star.draw()
+
+        self.for_all(do)
+
+        if selected_star.is_mine():
+            self.me.draw()
+        if selected_star.is_enemy():
+            self.enemy.draw()
+
+    @_update_vars
+    def move_selected(self, x: int, y: int) -> None:
+        if self.nothing_selected():
+            if self.im_selected:
+                if not self.is_mine(x, y):
+                    self._deactivate_me()
+            elif self.taken_stars and self.is_mine(x, y):
+                self._activate_me()
+            return
+        selected_star = self.stars[self.selected]
+        r = selected_star.get_radius()
+        if min(x, y, config.canvas_width - x, config.canvas_height - y) < r:
+            return
+        self._erase_selected()
+        selected_star.set_coordinates(x, y)
+        if self.taken() < self.m_var.get() and selected_star.is_mine():
+            if not self.me.is_bright():
+                self._activate_me()
+        elif self.me.is_bright():
+            self._deactivate_me()
+        selected_star.draw()
+
+    @_update_vars
+    def deselect(self,
+                 x: Optional[int] = None,
+                 y: Optional[int] = None,
+                 ) -> None:
+        if self.nothing_selected():
+            if self.im_selected:
+                self._deactivate_me()
+            else:
+                return
+            if x is not None and y is not None and self.taken_stars and self.is_mine(x, y):
+                star = self.taken_stars.pop()
+                self.stars.append(star)
+                star.move_randomly()
+                star.draw()
+                if self.taken_stars:
+                    return
+                if self.turn.get() == 1:
+                    self.next_turn_button.config(text='Передать очередь хода', state=tk.NORMAL)
+                else:
+                    self.next_turn_button.config(state=tk.DISABLED)
+            return
+        selected_star = self.stars[self.selected]
+        if selected_star.is_mine():
+            if self.taken() < self.m_var.get():
+                if not self.taken_stars:
+                    self.next_turn_button.config(text='Следующий ход', state=tk.NORMAL)
+                self._erase_selected()
+                self.remove_selected()
+                self.me.set_brightness_status('normal')
+                self.me.draw()
+            else:
+                self.move_selected(*self.selected_initial_pos)
+        if selected_star.is_enemy():
+            self.move_selected(*self.selected_initial_pos)
+        self.selected = -1
+
+    def remove_selected(self) -> None:
+        if self.nothing_selected():
+            return
+        self.taken_stars.append(self.stars[self.selected])
+        del self.stars[self.selected]
+        self.selected = -1
+
+    def nothing_selected(self) -> bool:
+        return self.selected == -1
+
+    def taken(self) -> int:
+        return len(self.taken_stars)
+
+    @_update_vars
+    def reset_taken(self) -> None:
+        self.taken_stars = []
+
+    def stars_left(self) -> int:
+        return len(self.stars)
+
+    def get_taken_var(self) -> tk.IntVar:
+        return self.taken_var
+
+    def get_left_var(self) -> tk.IntVar:
+        return self.left_var
+
+    def get_turn_var(self) -> tk.IntVar:
+        return self.turn
+
+    def _select_random(self) -> None:
+        if not self.stars:
+            raise Exception('Game._select_random: self.stars is empty')
+        self.selected = random.randrange(len(self.stars))
+        self.selected_initial_pos = self.stars[self.selected].coordinates()
+
+    @_update_vars
+    def _enemy_gets_the_star(self,
+                             take_time_ms: int,
+                             bright_time_ms: int,
+                             times: int,
+                             callback: Callable[[], None],
+                             ) -> None:
+        if times == 0:
+            callback()
+            return
+
+        self._select_random()
+
+        def after1():
+            self.enemy.set_brightness_status('bright')
+            self.enemy.draw()
+
+            def after2():
+                self._erase_selected()
+                self.remove_selected()
+
+                def after3():
+                    self.enemy.set_brightness_status('normal')
+                    self.enemy.draw()
+                    self._enemy_gets_the_star(take_time_ms, bright_time_ms, times-1, callback)
+
+                self.canvas.after(bright_time_ms // 2, after3)
+
+            self.canvas.after(bright_time_ms // 2, after2)
+
+        self.canvas.after(take_time_ms, after1)
+
+    @_update_vars
+    def enemy_turn(self, take: int, callback: Callable[[], None]) -> None:
+        once = config.enemy_turn_time_ms / take
+        bright_time_ms = round(once*config.enemy_bright_proportion)
+        take_time_ms = round(once*(1-config.enemy_bright_proportion))
+        self._enemy_gets_the_star(bright_time_ms, take_time_ms, take, callback)
