@@ -8,9 +8,11 @@ import sys
 import config
 from utils import grid_buttons, configure_row_minsize
 
-about_the_game: Final = '''Баше — математическая игра, в которой два игрока из кучки, содержащей первоначально N предметов.
-Игроки по очереди берут не менее одного и не более М предметов.
-Проигравшим считается тот, кому нечего брать.'''
+about_the_game: Final = '''Баше - математическая игра, в которой два игрока по очереди берут предметы из кучи
+N - первоначальное количетсво предметов в куче
+M - максимальное количество предметов, которое может взять игрок из кучи за один ход
+Пропускать ход не разрешается
+Проигравшим остаётся тот, кому нечего будет забрать с кучи'''
 
 
 def create(widget: tk.Tk,
@@ -21,7 +23,7 @@ def create(widget: tk.Tk,
            ) -> tk.Frame:
     frame = tk.Frame(widget, width=config.widget_width, height=config.widget_height)
 
-    text_label = tk.Label(frame, text=about_the_game + '\nВыбери N и M.', justify=tk.LEFT, font=config.standard_font)
+    text_label = tk.Label(frame, text=about_the_game + '\nВыбери N и M', justify=tk.LEFT, font=config.standard_font)
 
     m_scale = tk.Scale(
         frame,
