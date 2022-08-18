@@ -5,7 +5,7 @@ widget_width: Final = 800
 widget_height: Final = 450
 
 standard_font: Final = 'courier 14 bold'
-big_font: Final = 'Arial 28'
+big_font: Final = 'courier 28 bold'
 
 game_row_min_size: Final = 70
 game_config_row_min_size: Final = 120
@@ -33,7 +33,7 @@ my_spaceship_brighter_image: Final = join(__image_directory, 'bright-spaceship.g
 enemy_spaceship_image: Final = join(__image_directory, 'enemy-spaceship.gif')
 enemy_spaceship_brighter_image: Final = join(__image_directory, 'bright-enemy-spaceship.gif')
 
-game_result_font: Final = 'Helvetica 36 bold'
+game_result_font: Final = 'courier 40 bold'
 victory_text_color: Final = 'green'
 defeat_text_color: Final = 'red'
 
