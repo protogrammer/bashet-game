@@ -5,7 +5,7 @@ widget_width: Final = 800
 widget_height: Final = 450
 
 standard_font: Final = 'courier 14 bold'
-big_font: Final = 'courier 28 bold'
+big_font: Final = 'courier 24 bold'
 
 game_row_min_size: Final = 70
 game_config_row_min_size: Final = 120
