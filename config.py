@@ -27,6 +27,7 @@ enemy_turn_time_ms: Final = 3000
 enemy_bright_proportion: Final = 0.6
 
 __image_directory = 'imgs'
+bashet_game_icon: Final = join(__image_directory, 'bashet-game.ico')
 my_spaceship_image: Final = join(__image_directory, 'spaceship.gif')
 my_spaceship_brighter_image: Final = join(__image_directory, 'bright-spaceship.gif')
 enemy_spaceship_image: Final = join(__image_directory, 'enemy-spaceship.gif')
