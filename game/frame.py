@@ -20,7 +20,7 @@ def create(widget: tk.Tk,
            n_var: tk.IntVar,
            m_var: tk.IntVar,
            ) -> tuple[tk.Frame, Callable[[], None]]:
-    frame = tk.Frame(widget)
+    frame = tk.Frame(widget, width=config.widget_width, height=config.widget_height)
 
     n_m_info_labels = [
         tk.Label(frame, text='N:', font=config.big_font),
