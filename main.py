@@ -3,7 +3,7 @@ import random
 import time
 
 import config
-import game.frame as game
+import game.frame
 import frame
 
 
@@ -20,7 +20,7 @@ def main() -> None:
     n = tk.IntVar(value=15)
     m = tk.IntVar(value=3)
 
-    game_frame, init_game = game.create(widget, lambda: config_frame, n, m)
+    game_frame, init_game = game.frame.create(widget, lambda: config_frame, n, m)
     config_frame = frame.create(widget, lambda: game_frame, n, m, init_game)
 
     config_frame.pack()
