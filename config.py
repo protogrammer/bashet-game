@@ -4,13 +4,15 @@ from os.path import join
 widget_width: Final = 800
 widget_height: Final = 450
 
-standard_font: Final = ('Arial', 12)
-big_font: Final = ('Arial', 28)
+standard_font: Final = 'courier 14 bold'
+big_font: Final = 'Arial 28'
 
 game_row_min_size: Final = 70
 game_config_row_min_size: Final = 120
 
-scale_length: Final = widget_width
+scale_text_offset: Final = 9
+scale_length: Final = widget_width - 10
+
 canvas_width: Final = widget_width - 30
 canvas_height: Final = 2 * canvas_width // 5
 outline_color: Final = 'lightblue'
