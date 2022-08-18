@@ -16,7 +16,7 @@ about_the_game: Final = '''     Два космических корабля с�
 
 
 def create(widget: tk.Tk,
-           get_game_frame: Callable[[], tk.Frame],
+           pack_game_frame: Callable[[], None],
            n_var: tk.IntVar,
            m_var: tk.IntVar,
            game_init: Callable[[], None],
@@ -57,7 +57,7 @@ def create(widget: tk.Tk,
     def switch_to_game() -> None:
         frame.pack_forget()
         game_init()
-        get_game_frame().pack()
+        pack_game_frame()
 
     def randomize_and_switch_to_game() -> None:
         n_var.set(random.randint(1, config.max_n))

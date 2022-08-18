@@ -16,7 +16,7 @@ def computer_response(left: int, m: int) -> int:
 
 
 def create(widget: tk.Tk,
-           get_config_frame: Callable[[], tk.Frame],
+           pack_config_frame: Callable[[], None],
            n_var: tk.IntVar,
            m_var: tk.IntVar,
            ) -> tuple[tk.Frame, Callable[[], None]]:
@@ -74,7 +74,7 @@ def create(widget: tk.Tk,
 
     def switch_to_config() -> None:
         frame.pack_forget()
-        get_config_frame().pack()
+        pack_config_frame()
 
     buttons = [
         resign_button,

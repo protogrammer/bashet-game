@@ -20,8 +20,8 @@ def main() -> None:
     n = tk.IntVar(value=15)
     m = tk.IntVar(value=3)
 
-    game_frame, init_game = game.frame.create(widget, lambda: config_frame, n, m)
-    config_frame = frame.create(widget, lambda: game_frame, n, m, init_game)
+    game_frame, init_game = game.frame.create(widget, lambda: config_frame.pack(), n, m)
+    config_frame = frame.create(widget, game_frame.pack, n, m, init_game)
 
     config_frame.pack()
 
